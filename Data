@@ -1,0 +1,65 @@
+Data Acquisition Guide
+This project uses physiological signal data from PhysioNet, a free and open repository of biomedical research data maintained by MIT.
+
+Dataset
+Name: Sleep Apnea Database (or equivalent multi-channel respiratory/oximetry dataset)
+Source: https://physionet.org/
+License: PhysioNet Credentialed Health Data License — free for research use
+Format: WFDB (WaveForm DataBase) — binary signal files (.dat) + header files (.hea) + annotation files (.apn)
+
+Step-by-Step Instructions
+Option A: Download via browser
+
+Go to https://physionet.org/content/apnea-ecg/ (or search PhysioNet for your specific dataset)
+Create a free PhysioNet account if you don't have one
+Click "Files" on the dataset page
+Download the full dataset as a .zip or download individual records
+Extract files into data/raw/ in this repository
+
+Option B: Download via command line (recommended)
+Install the PhysioNet client tool:
+bashpip install wfdb
+Then download directly in Python:
+pythonimport wfdb
+
+# Download all records for a dataset
+wfdb.dl_database('apnea-ecg', dl_dir='data/raw/')
+Or download a single record:
+pythonwfdb.dl_record('apnea-ecg/a01', dl_dir='data/raw/')
+Option C: Download via wget
+bashwget -r -N -c -np https://physionet.org/files/apnea-ecg/1.0.0/ -P data/raw/
+
+Expected File Structure
+After downloading, data/raw/ should contain files like:
+data/raw/
+├── a01.dat       # Signal data (binary)
+├── a01.hea       # Header (sampling rate, channel names, etc.)
+├── a01.apn       # Apnea annotations (per-minute labels)
+├── a02.dat
+├── a02.hea
+├── a02.apn
+├── ...
+└── RECORDS       # List of all record names
+Each record corresponds to one subject's overnight recording. The .apn annotation file contains per-minute labels: A (apnea) or N (normal).
+
+Verifying the Download
+Run the following to confirm the data loaded correctly:
+pythonimport wfdb
+
+record = wfdb.rdrecord('data/raw/a01')
+annotation = wfdb.rdann('data/raw/a01', 'apn')
+
+print(record.sig_name)     # ['SaO2', 'RESP', ...]
+print(record.fs)           # Sampling frequency
+print(annotation.symbol)   # ['N', 'A', 'N', ...]
+
+Signal Channels Used
+This project uses two channels from each recording:
+ChannelDescriptionSaO2 / SpO2Peripheral oxygen saturation (oximetry)RESPRespiratory effort signal
+Other channels present in the dataset (e.g., ECG, EEG) are not used and can be ignored.
+
+Notes
+
+Do not commit data files to Git. The data/ directory is listed in .gitignore. Signal files are large and subject to PhysioNet's terms of use.
+Account required for some datasets. Most PhysioNet datasets are open-access, but a small number require credentialing. Check the dataset page for access requirements.
+Sampling rates vary by record. The loader in src/loader.py handles resampling automatically.
