@@ -1,0 +1,80 @@
+Reproducing Results
+This guide walks through every step needed to go from raw PhysioNet data to the classification results and figures reported in the paper.
+
+Prerequisites
+
+Python 3.10 or higher
+~2 GB disk space for data and figures
+Data downloaded to data/raw/ — see DATA.md
+
+
+1. Set Up the Environment
+Create and activate a virtual environment (recommended):
+bashpython -m venv .venv
+source .venv/bin/activate       # macOS/Linux
+.venv\Scripts\activate          # Windows
+Install dependencies:
+bashpip install -r requirements.txt
+
+2. Preprocess the Data
+Load raw WFDB records, segment into analysis windows, reject artifacts, and normalize signals:
+bashpython src/preprocess.py
+Output: data/processed/windows.pkl — a serialized DataFrame containing one row per analysis window with columns for the raw signal arrays and ground-truth labels.
+Expected runtime: 1–3 minutes depending on how many records are present.
+
+3. Extract Features
+Apply the full feature engineering pipeline to the processed windows:
+bashpython src/features.py
+Output: data/processed/features.csv — one row per window, one column per feature, plus a label column (apnea / normal).
+Expected runtime: Under 1 minute.
+
+4. Generate Visualizations
+Produce all six figures used in the paper:
+bashpython src/visualize.py
+Output: Six PNG files saved to figures/:
+FileFigureumap_condition_type.pngFigure 1 — UMAP colored by condition typeumap_pressure.pngFigure 2 — UMAP colored by pressure levelcorrelation_heatmap.pngFigure 3 — Feature correlation heatmapspo2_distribution.pngFigure 4 — SpO₂ distributions by classumap_apnea_normal.pngFigure 5 — UMAP colored by binary labelfeature_importance.pngFigure 6 — Random Forest feature importances
+Expected runtime: 2–5 minutes (UMAP is the slow step).
+
+Note: UMAP results are seeded with random_state=42. Layout will be identical across runs, but may differ from other machines if library versions differ.
+
+
+5. Train and Evaluate the Classifier
+Run the three experiments (respiratory-only, oximetry-only, multimodal) with 5-fold stratified cross-validation:
+bashpython src/classify.py
+Output: Results printed to stdout and saved to results/classification_report.csv.
+Expected output:
+Respiratory Only  — Accuracy: 0.72  Sensitivity: 0.68  F1: 0.69
+Oximetry Only     — Accuracy: 0.78  Sensitivity: 0.75  F1: 0.76
+Multimodal        — Accuracy: 0.91  Sensitivity: 0.89  F1: 0.90
+Expected runtime: 2–4 minutes.
+
+6. Run Everything at Once
+To run the full pipeline end-to-end in one command:
+bashpython src/preprocess.py && \
+python src/features.py && \
+python src/visualize.py && \
+python src/classify.py
+Total expected runtime: 5–12 minutes on a modern laptop.
+
+Notebooks
+If you prefer an interactive walkthrough, the notebooks in notebooks/ follow the same pipeline with inline explanations and intermediate outputs:
+bashpip install jupyter
+jupyter notebook
+Run them in order:
+NotebookCovers01_eda.ipynbRaw signal inspection and label distribution02_features.ipynbFeature engineering with visualizations03_umap.ipynbUMAP embedding and visualization04_classification.ipynbModel training, evaluation, and feature importance
+
+Reproducibility Notes
+SettingValueRandom seed42 (applied to UMAP and Random Forest)Cross-validationStratified 5-foldScaler fitTraining folds only (no leakage)Python version3.10+OS testedmacOS 14, Ubuntu 22.04
+Minor floating-point differences across operating systems or library versions are expected and will not meaningfully affect results.
+
+Troubleshooting
+ModuleNotFoundError: No module named 'umap'
+The package name is umap-learn, not umap. Make sure you installed from requirements.txt.
+bashpip install umap-learn
+FileNotFoundError: data/raw/...
+Data files are not present. Follow DATA.md to download them first.
+UMAP takes too long
+If the dataset is large, pass --sample N to visualize.py to subsample N windows for the embedding:
+bashpython src/visualize.py --sample 5000
+Results differ slightly from the paper
+Small differences in accuracy (~1–2%) can occur due to PhysioNet data version, OS-level floating-point behavior, or library updates. The ranking of approaches (multimodal > oximetry > respiratory) should be stable.
