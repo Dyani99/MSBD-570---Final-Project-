@@ -1,9 +1,9 @@
 Sleep Apnea Detection Using Multimodal Machine Learning
 Automated sleep apnea detection from physiological signals using feature engineering, UMAP visualization, and Random Forest classification. This project combines respiratory effort and SpO₂ oximetry signals from the PhysioNet dataset to demonstrate that multimodal feature fusion substantially outperforms single-modality approaches.
+
 MSBD-570 Final Project · Dyani Peterson
 
-Results at a Glance
-ApproachAccuracySensitivityF1 (Apnea)Respiratory Only72%68%0.69Oximetry Only78%75%0.76Multimodal (Combined)91%89%0.90
+
 
 Project Structure
 sleep-apnea-detection/
